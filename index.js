@@ -221,6 +221,31 @@ app.get('/enviarCorreo', async function (req, res) {
     res.send({"mensaje": "Se genero correctamente el codigo QR"})
 })
 
+
+
+app.post('/generarBoleto', async function (req, res) {
+    const urlCv = req.body.codigo_acceso;
+    const QR = await qrcode.toDataURL(urlCv)
+    const htmlContent =  `
+        <div style="display: flex; justify-content: center; align-items: center;">
+        <h2>Boleto</h2>
+        <img src="${QR}">
+        </div>
+        `;
+        const queryCupon = "SELECT * FROM worldlol.usuario u " +
+        "inner join worldlol.evento e on e.id = u.id_evento " +
+        "inner join worldlol.cupon c on c.id = u.id_cupon " +
+        "where u.codigo_acceso =  '"+ req.body.codigo_acceso  + "'";
+        await connection.query(queryCupon, async function (error, results, fields) {
+            if(results.length > 0) { 
+                res.send({"mensaje": "se generaron los boletos ", "code": 200, "data": results, "codigoQR": htmlContent, "base64": QR})
+            } else {
+                res.send({"mensaje": "No se encuentran los boletos ", "code": 500, "data": []})
+            }
+        });
+    
+})
+
 const generarString = (longitud) => {
     let result = "";
     const abc = "a b c d e f g h i j k l m n o p q r s t u v w x y z".split(" "); // Espacios para convertir cara letra a un elemento de un array
