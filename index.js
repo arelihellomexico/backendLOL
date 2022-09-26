@@ -43,67 +43,73 @@ app.get('/healtcheck', function (req, res) {
 })
 
 app.post('/usuario', async function (req, res) {
-    const queryCupon = "SELECT * FROM cupon cu where cu.clave = '"+ req.body.codigo_acceso  + "'";
-    await connection.query(queryCupon, async function (error, results1, fields) {
-        if(results1.length > 0) {   
-            const queryCupon = "SELECT * FROM evento ev where ev.id = '"+ results1[0].id_evento  + "'";
-            await connection.query(queryCupon, async function (error, results2, fields) {
-                const usuario =  generarUser();
-                const contrasenia =  generarString(10);
-                const query = "INSERT INTO worldlol.usuario (nombre,email,codigo_acceso,verificado,usuario,contrasenia,id_evento,id_cupon) \n"
-                + "VALUES ('" + req.body.nombre + "', '" + req.body.email + "', '" + req.body.codigo_acceso + "', "
-                + 0 + ", '" + usuario + "' , '" + contrasenia + "', " + results1[0].id_evento + ", " + results1[0].id + " )"
-                await connection.query(query, async function (error, results3, fields) {
-                    const API_KEY = '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'
-                    const QR = await qrcode.toDataURL(req.body.codigo_acceso)
-                    const codigo = QR.replace('data:image/png;base64,' , ''); 
-                    sgMail.setApiKey(API_KEY)
-                    const message = {
-                        to: req.body.email,
-                        from: 'registro@worldscdmx2022.com',
-                        subject: '¡Bienvenido a World CDMX 2022',
-                        text: '¡Tus boletos estan listo!',
-                        html: '<img src="' + QR +'"/>' +
-                        '<img src="cid:myimagecid"/>' +
-                        '<center> <p style="color: black; font-size: 20px;">Código de acceso</p> </center>' +
-                        '<center> <p style="color: black; font-size: 20px;">'+ req.body.codigo_acceso +'</p> </center>' +
-                        '<center> <p style="color: black; font-size: 20px;">Usuario</p> </center>' +
-                        '<center> <p style="color: black; font-size: 20px;">'+ usuario +'</p> </center>' +
-                        '<center> <p style="color: black; font-size: 20px;">Contraseña</p> </center>' +
-                        '<center> <p style="color: black; font-size: 20px;">'+ contrasenia +'</p> </center>' +
-                        ' <center>  <p style="color: black; font-size: 20px;">Fecha</p> </center>' +
-                        '<center> ' +
-                        '<!-- eslint-disable-next-line max-len --> '+ 
-                        '<p style="width: 540px; height: 40px; border-radius: 20px; color: #321BDD; text-align: center; padding-top: 8px; font-size: 20px;">' + results2[0].fecha.toISOString().substring(0, 10) + '</p> ' +
-                        '<p style="color: black; font-size: 20px;">Hora</p> '+
-                        '<!-- eslint-disable-next-line max-len --> ' + 
-                        '<p style="width: 540px; height: 40px; border-radius: 20px; color: #321BDD; text-align: center; padding-top: 8px; font-size: 20px;">' +results2[0].hora_inicio + ' a ' + results2[0].hora_fin + 'hrs </p>' +
-                        '<p style="color: black; font-size: 20px;"> ' +
-                        'Lugar: Centro Cultural Estación Indianilla <br> ' +
-                        '  Dirección: Claudio Bernard 111, Doctores, Cuauhtémoc,<br> 06720 Ciudad de México, CDMX '+
-                        '</p> ' +
-                        '<br> ' +
-                        ' </center> '+
-                        '<br>' ,
-                        attachments: [
-                            {
-                              filename: "imageattachment.png",
-                              content: codigo,
-                              content_id: "myimagecid",
-                            }
-                        ]     
-                    }
-                    sgMail.send(message)
-                    .then(respose => console.log('Enviado' ))
-                    .catch(error => console.log('Error' + error.message))
-                    res.send({"mensaje": "Usuario registrado correctamente", 'code': 200, 'data': []});
-                });
-            });
-            
+    const queryCuponUsuario = "SELECT * FROM usuario u where u.codigo_acceso = '"+ req.body.codigo_acceso  + "'";
+    await connection.query(queryCuponUsuario, async function (error, result, fields) {
+        if (result.length > 0 ) {
+            res.send({"mensaje": "Tu cupon ya esta en uso con otro usuario", 'code': 500, 'data': 'no hay data'});
         } else {
-            res.send({"mensaje": "No se encontro ese cupon", 'code': 500, 'data': 'no hay data'});
+            const queryCupon = "SELECT * FROM cupon cu where cu.clave = '"+ req.body.codigo_acceso  + "'";
+            await connection.query(queryCupon, async function (error, results1, fields) {
+                if(results1.length > 0) {   
+                    const queryCupon = "SELECT * FROM evento ev where ev.id = '"+ results1[0].id_evento  + "'";
+                    await connection.query(queryCupon, async function (error, results2, fields) {
+                        const usuario =  generarUser();
+                        const contrasenia =  generarString(10);
+                        const query = "INSERT INTO worldlol.usuario (nombre,email,codigo_acceso,verificado,usuario,contrasenia,id_evento,id_cupon) \n"
+                        + "VALUES ('" + req.body.nombre + "', '" + req.body.email + "', '" + req.body.codigo_acceso + "', "
+                        + 0 + ", '" + usuario + "' , '" + contrasenia + "', " + results1[0].id_evento + ", " + results1[0].id + " )"
+                        await connection.query(query, async function (error, results3, fields) {
+                            const API_KEY = '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'
+                            const QR = await qrcode.toDataURL(req.body.codigo_acceso)
+                            const codigo = QR.replace('data:image/png;base64,' , ''); 
+                            sgMail.setApiKey(API_KEY)
+                            const message = {
+                                to: req.body.email,
+                                from: 'registro@worldscdmx2022.com',
+                                subject: '¡Bienvenido a World CDMX 2022',
+                                text: '¡Tus boletos estan listo!',
+                                html: '<img src="' + QR +'"/>' +
+                                '<img src="cid:myimagecid"/>' +
+                                '<center> <p style="color: black; font-size: 20px;">Código de acceso</p> </center>' +
+                                '<center> <p style="color: black; font-size: 20px;">'+ req.body.codigo_acceso +'</p> </center>' +
+                                '<center> <p style="color: black; font-size: 20px;">Usuario</p> </center>' +
+                                '<center> <p style="color: black; font-size: 20px;">'+ usuario +'</p> </center>' +
+                                '<center> <p style="color: black; font-size: 20px;">Contraseña</p> </center>' +
+                                '<center> <p style="color: black; font-size: 20px;">'+ contrasenia +'</p> </center>' +
+                                ' <center>  <p style="color: black; font-size: 20px;">Fecha</p> </center>' +
+                                '<center> ' +
+                                '<!-- eslint-disable-next-line max-len --> '+ 
+                                '<p style="width: 540px; height: 40px; border-radius: 20px; color: #321BDD; text-align: center; padding-top: 8px; font-size: 20px;">' + results2[0].fecha.toISOString().substring(0, 10) + '</p> ' +
+                                '<p style="color: black; font-size: 20px;">Hora</p> '+
+                                '<!-- eslint-disable-next-line max-len --> ' + 
+                                '<p style="width: 540px; height: 40px; border-radius: 20px; color: #321BDD; text-align: center; padding-top: 8px; font-size: 20px;">' +results2[0].hora_inicio + ' a ' + results2[0].hora_fin + 'hrs </p>' +
+                                '<p style="color: black; font-size: 20px;"> ' +
+                                'Lugar: Centro Cultural Estación Indianilla <br> ' +
+                                '  Dirección: Claudio Bernard 111, Doctores, Cuauhtémoc,<br> 06720 Ciudad de México, CDMX '+
+                                '</p> ' +
+                                '<br> ' +
+                                ' </center> '+
+                                '<br>' ,
+                                attachments: [
+                                    {
+                                    filename: "imageattachment.png",
+                                    content: codigo,
+                                    content_id: "myimagecid",
+                                    }
+                                ]     
+                            }
+                            sgMail.send(message)
+                            .then(respose => console.log('Enviado' ))
+                            .catch(error => console.log('Error' + error.message))
+                            res.send({"mensaje": "Usuario registrado correctamente", 'code': 200, 'data': []});
+                        });
+                    });
+                    
+                } else {
+                    res.send({"mensaje": "No se encontro ese cupon", 'code': 500, 'data': 'no hay data'});
+                }
+            }); 
         }
-        
     });    
 })
 
