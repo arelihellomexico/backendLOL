@@ -59,7 +59,7 @@ app.post('/usuario', async function (req, res) {
                         + "VALUES ('" + req.body.nombre + "', '" + req.body.email + "', '" + req.body.codigo_acceso + "', "
                         + 0 + ", '" + usuario + "' , '" + contrasenia + "', " + results1[0].id_evento + ", " + results1[0].id + " )"
                         await connection.query(query, async function (error, results3, fields) {
-                            const API_KEY = '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'
+                            const API_KEY = 'API'
                             const QR = await qrcode.toDataURL(req.body.codigo_acceso)
                             const codigo = QR.replace('data:image/png;base64,' , ''); 
                             sgMail.setApiKey(API_KEY)
@@ -183,7 +183,7 @@ app.get('/generatePDF', async function (req, res) {
 })
 
 app.get('/enviarCorreo', async function (req, res) {
-    const API_KEY = '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'
+    const API_KEY = 'API'
 
     sgMail.setApiKey(API_KEY)
     const urlCv = 'L5R3P8';
