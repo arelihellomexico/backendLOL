@@ -4,6 +4,7 @@ var bodyParser = require("body-parser")
 var methodOverride = require("method-override");
 var fs = require("fs");
 var qrcode = require("qrcode");
+var puppeteer = require("puppeteer");
 var pdf = require('html-pdf');
 var sgMail = require('@sendgrid/mail')
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -59,49 +60,220 @@ app.post('/usuario', async function (req, res) {
                         + "VALUES ('" + req.body.nombre + "', '" + req.body.email + "', '" + req.body.codigo_acceso + "', "
                         + 0 + ", '" + usuario + "' , '" + contrasenia + "', " + results1[0].id_evento + ", " + results1[0].id + " )"
                         await connection.query(query, async function (error, results3, fields) {
-                            const API_KEY = 'API'
-                            const QR = await qrcode.toDataURL(req.body.codigo_acceso)
-                            const codigo = QR.replace('data:image/png;base64,' , ''); 
-                            sgMail.setApiKey(API_KEY)
-                            const message = {
-                                to: req.body.email,
-                                from: 'registro@worldscdmx2022.com',
-                                subject: '¡Bienvenido a World CDMX 2022',
-                                text: '¡Tus boletos estan listo!',
-                                html: '<img src="' + QR +'"/>' +
-                                '<img src="cid:myimagecid"/>' +
-                                '<center> <p style="color: black; font-size: 20px;">Código de acceso</p> </center>' +
-                                '<center> <p style="color: black; font-size: 20px;">'+ req.body.codigo_acceso +'</p> </center>' +
-                                '<center> <p style="color: black; font-size: 20px;">Usuario</p> </center>' +
-                                '<center> <p style="color: black; font-size: 20px;">'+ usuario +'</p> </center>' +
-                                '<center> <p style="color: black; font-size: 20px;">Contraseña</p> </center>' +
-                                '<center> <p style="color: black; font-size: 20px;">'+ contrasenia +'</p> </center>' +
-                                ' <center>  <p style="color: black; font-size: 20px;">Fecha</p> </center>' +
-                                '<center> ' +
-                                '<!-- eslint-disable-next-line max-len --> '+ 
-                                '<p style="width: 540px; height: 40px; border-radius: 20px; color: #321BDD; text-align: center; padding-top: 8px; font-size: 20px;">' + results2[0].fecha.toISOString().substring(0, 10) + '</p> ' +
-                                '<p style="color: black; font-size: 20px;">Hora</p> '+
-                                '<!-- eslint-disable-next-line max-len --> ' + 
-                                '<p style="width: 540px; height: 40px; border-radius: 20px; color: #321BDD; text-align: center; padding-top: 8px; font-size: 20px;">' +results2[0].hora_inicio + ' a ' + results2[0].hora_fin + 'hrs </p>' +
-                                '<p style="color: black; font-size: 20px;"> ' +
-                                'Lugar: Centro Cultural Estación Indianilla <br> ' +
-                                '  Dirección: Claudio Bernard 111, Doctores, Cuauhtémoc,<br> 06720 Ciudad de México, CDMX '+
-                                '</p> ' +
-                                '<br> ' +
-                                ' </center> '+
-                                '<br>' ,
-                                attachments: [
-                                    {
-                                    filename: "imageattachment.png",
-                                    content: codigo,
-                                    content_id: "myimagecid",
-                                    }
-                                ]     
-                            }
-                            sgMail.send(message)
-                            .then(respose => console.log('Enviado' ))
-                            .catch(error => console.log('Error' + error.message))
-                            res.send({"mensaje": "Usuario registrado correctamente", 'code': 200, 'data': []});
+                            const queryCupon = "SELECT * FROM Sendgrid";
+                            await connection.query(queryCupon, async function (error, resultsCupon, fields) {
+                                const API_KEY = resultsCupon[0].key
+                                sgMail.setApiKey(API_KEY)
+                                const urlCv = req.body.codigo_acceso;
+                                const QR = await qrcode.toDataURL(urlCv)
+                                const horaFinal = results2[0].hora_inicio + ' a ' + results2[0].hora_fin;
+                                const fecha = results2[0].fecha.toISOString().substr(0, 10);
+                                const codigo = QR.replace('data:image/png;base64,' , ''); 
+                                const htmlContent = `<!DOCTYPE html>
+                                <html lang="en">
+                                <head>
+                                    <meta charset="UTF-8" />
+                                    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+                                    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                                    <title>Boleto</title>
+                                </head>
+                                <body
+                                    style="
+                                    font-weight: bold;
+                                    font-family: 'PPFraktionSans-Bold';
+                                    background-color: url('http://worldscdmx2022.com/img-email//femail.jpg');
+                                    background-position: center center;
+                                    background-attachment: fixed;
+                                    background-repeat: no-repeat;
+                                    background-size: cover;
+                                    "
+                                >
+                                    <div style="
+                                    background-position: center center;
+                                    background-attachment: fixed;
+                                    background-repeat: no-repeat;
+                                    background-size: cover;">
+                                        <center>
+                                        <img
+                                            style="padding: 0px 0px 40px 0px"
+                                            alt="Worlds 2022 logo"
+                                            src="http://worldscdmx2022.com/img-email//palabra2.png"
+                                        />
+                                        </center>
+                                        <br />
+                                        <center>
+                                        
+                                        <img
+                                            src="${QR}"
+                                            alt=""
+                                            style="height: 431px; width: auto"
+                                        />
+                                        
+                                        <p
+                                            style="
+                                            color: black;
+                                            font-size: 20px;
+                                            margin-top: 10px;
+                                            font-family: 'Manuka-Bold';
+                                            "
+                                        >
+                                            ${req.body.codigo_acceso}
+                                        </p>
+                                        
+                                        <p
+                                            style="
+                                            color: black;
+                                            font-size: 20px;
+                                            margin-top: 10px;
+                                            font-family: 'Manuka-Bold';
+                                            "
+                                        >
+                                            Fecha
+                                        </p>
+                                        
+                                        <p
+                                            style="
+                                            font-family: 'Manuka-Bold';
+                                            margin-top: 10px;
+                                            width: 540px;
+                                            height: 40px;
+                                            background-color: #321bdd;
+                                            border-radius: 20px;
+                                            color: black;
+                                            text-align: center;
+                                            padding-top: 8px;
+                                            font-size: 20px;
+                                            "
+                                        >
+                                            ${fecha}
+                                        </p>
+                                        
+                                        <p
+                                            style="font-family: 'Manuka-Bold'; color: black; font-size: 20px"
+                                        >
+                                            Hora
+                                        </p>
+                                        
+                                        <p
+                                            style="
+                                            font-family: 'Manuka-Bold';
+                                            width: 540px;
+                                            margin-top: 10px;
+                                            height: 40px;
+                                            background-color: #321bdd;
+                                            border-radius: 20px;
+                                            color: black;
+                                            text-align: center;
+                                            padding-top: 8px;
+                                            font-size: 20px;
+                                            "
+                                        >
+                                            ${horaFinal}
+                                        </p>
+                                        
+                                        <p
+                                            style="
+                                            font-family: 'Manuka-Bold';
+                                            color: black;
+                                            font-size: 20px;
+                                            margin-top: 10px;
+                                            margin-bottom: 10px;
+                                            "
+                                        >
+                                            Lugar: Centro Cultural Estación Indianilla <br />
+                                            Dirección: Claudio Bernard 111, Doctores, Cuauhtémoc,<br />
+                                            06720 Ciudad de México, CDMX
+                                        </p>
+                                        <br />
+                                        <img
+                                            style="padding: 0px 0px 20px 0px"
+                                            alt="Worlds 2022"
+                                            src="http://worldscdmx2022.com/img-email//palabra.png"
+                                        />
+                                        <br /><br />
+                                        </center>
+                                        <div
+                                        style="
+                                            position: fixed;
+                                            left: 0;
+                                            bottom: 0;
+                                            width: 100%;
+                                            color: white;
+                                            text-align: center;
+                                        "
+                                        >
+                                        </div>
+                                    </div>
+                                    </div>
+                                </body>
+                                </html>        
+                                `;
+                                const browser = await puppeteer.launch();
+                                const page = await browser.newPage();
+                                await page.setContent(htmlContent);
+
+                                const buffer = await page.pdf({ format: "A4" });
+                                const base64 = buffer.toString('base64');
+                                console.log(`data:application/pdf;base64,${base64}`); // Test it in a browser.
+
+                                const message = {
+                                    to: 'erosalescoronel@gmail.com',
+                                    from: 'marketing@conexionfacil.com',
+                                    subject: '¡Bienvenido a World CDMX 2022',
+                                    text: '¡Tus boletos estan listo!',
+                                    html: '<html lang="en">' +
+                                    '<head>' +
+                                        '<meta charset="UTF-8">'+
+                                        '<meta http-equiv="X-UA-Compatible" content="IE=edge">'+
+                                        '<meta name="viewport" content="width=device-width, initial-scale=1.0">'+
+                                        '<title>Correo de confirmación Email</title>'+
+                                    '</head>'+
+                                    '<body style="margin:auto 0px;">'+
+                                        '<div >'+
+                                            '<div style="position: relative; left: 0; top: 0; background-image: ' +
+                                            "url('https://tes.opl.worldscdmx2022.com/fondo%2001.png'); width: 100%; height: 200px; display: flex;" +
+                                            'justify-content: space-between;">' +
+                                                '<div>'+
+                                                '<img src="https://tes.opl.worldscdmx2022.com/2LOGO2.png"  aling="right" width="50%" style="padding-top: 60px; padding-left:20px; "/>'+
+                                                '</div> '+
+                                                '<div >'+
+                                                '<img src="https://tes.opl.worldscdmx2022.com/worlDs_cdmx_2022.png" align="left" class="heaven" width="80%" style="float:right; padding-top: 70px; padding-right: 35px;"/>'+
+                                                '</div>'+
+                                            '</div>'+
+                                            '<div >'+
+                                                '<div  style=" text-align: center; font-family: '+
+                                                "'Heebo', sans-serif; padding-top: 40px; padding-bottom: 60px; font-size: 20px; "+
+                                                'font-weight:700;">'+
+                                                    '<img src="https://tes.opl.worldscdmx2022.com/Objeto%20inteligente%20vectorial%20copia.png" style="padding-bottom: 60px; width:150px; height: auto;">'+
+                                                    '<h1 class="azul" style="padding-bottom:20px; color: #321bdd;">WORLDS CDMX 2022</h1>'+
+                                                '<p>Felicidades, estás a punto de obtener boletos para nuestro torneo </p>'+
+                                                '<br />'+
+                                                '<a href="www.google.com">Confirma tu e-mail haciendo clic aquí</a>'+                 
+                                                '<p style="padding-top: 20px;">o escribe el siguiente código en la pantalla de confirmación:</p>'+
+                                                '<p class="azul" style="padding-top: 40px;">45678</p>'            +
+                                                '</div>'+
+                                            '</div>'+
+                                            '<div>'+
+                                                '<img src="https://tes.opl.worldscdmx2022.com/Objeto%20inteligente%20vectorial_N.png" width="100%">'+
+                                            '</div>'+
+                                        '</div>'+
+                                    '</body>'+
+                                    '</html>',
+                                    attachments: [
+                                        {
+                                        filename: `Boleto`,
+                                        content: base64,
+                                        type: 'application/pdf',
+                                        disposition: 'attachment'
+                                        }
+                                    ]
+                                }
+                                sgMail.send(message)
+                                .then(respose => console.log('Enviado' ))
+                                .catch(error => console.log('Error' + error.message))
+                                res.send({"mensaje": "Usuario registrado correctamente", 'code': 200, 'data': []});
+                            });
+                            
                         });
                     });
                     
@@ -110,6 +282,18 @@ app.post('/usuario', async function (req, res) {
                 }
             }); 
         }
+    });    
+})
+
+app.post('/iniciarSesion', async function (req, res) {
+    const queryCupon = "SELECT * FROM usuario u where u.usuario = '"+ req.body.usuario  + "' and u.contrasenia = '" + req.body.contrasenia  +"'";
+    await connection.query(queryCupon, async function (error, results, fields) {
+        if(results.length > 0) { 
+            res.send({"mensaje": "Listo tu acceso", 'code': 200, 'data': []});
+        } else {
+            res.send({"mensaje": "No se encontro ese usuario", 'code': 500, 'data': 'no hay data'});
+        }
+        
     });    
 })
 
@@ -183,48 +367,218 @@ app.get('/generatePDF', async function (req, res) {
 })
 
 app.get('/enviarCorreo', async function (req, res) {
-    const API_KEY = 'API'
+    const queryCupon = "SELECT * FROM Sendgrid";
+    await connection.query(queryCupon, async function (error, results, fields) {
+        const API_KEY = results[0].key
+        sgMail.setApiKey(API_KEY)
+        const urlCv = 'Z9H5W7';
+        const QR = await qrcode.toDataURL(urlCv)
+        const codigo = QR.replace('data:image/png;base64,' , ''); 
+        const htmlContent = `<!DOCTYPE html>
+        <html lang="en">
+          <head>
+            <meta charset="UTF-8" />
+            <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <title>Boleto</title>
+          </head>
+          <body
+            style="
+              font-weight: bold;
+              font-family: 'PPFraktionSans-Bold';
+              background-color: url('http://worldscdmx2022.com/img-email//femail.jpg');
+              background-position: center center;
+              background-attachment: fixed;
+              background-repeat: no-repeat;
+              background-size: cover;
+            "
+          >
+              <div style="
+              background-position: center center;
+              background-attachment: fixed;
+              background-repeat: no-repeat;
+              background-size: cover;">
+                <center>
+                  <img
+                    style="padding: 0px 0px 40px 0px"
+                    alt="Worlds 2022 logo"
+                    src="http://worldscdmx2022.com/img-email//palabra2.png"
+                  />
+                </center>
+                <br />
+                <center>
+                  
+                  <img
+                    src="${QR}"
+                    alt=""
+                    style="height: 431px; width: auto"
+                  />
+                  
+                  <p
+                    style="
+                      color: black;
+                      font-size: 20px;
+                      margin-top: 10px;
+                      font-family: 'Manuka-Bold';
+                    "
+                  >
+                    TOKEM1029288
+                  </p>
+                  
+                  <p
+                    style="
+                      color: black;
+                      font-size: 20px;
+                      margin-top: 10px;
+                      font-family: 'Manuka-Bold';
+                    "
+                  >
+                    Fecha
+                  </p>
+                  
+                  <p
+                    style="
+                      font-family: 'Manuka-Bold';
+                      margin-top: 10px;
+                      width: 540px;
+                      height: 40px;
+                      background-color: #321bdd;
+                      border-radius: 20px;
+                      color: black;
+                      text-align: center;
+                      padding-top: 8px;
+                      font-size: 20px;
+                    "
+                  >
+                    1 DE OCTUBRE DEL 2022
+                  </p>
+                  
+                  <p
+                    style="font-family: 'Manuka-Bold'; color: black; font-size: 20px"
+                  >
+                    Hora
+                  </p>
+                  
+                  <p
+                    style="
+                      font-family: 'Manuka-Bold';
+                      width: 540px;
+                      margin-top: 10px;
+                      height: 40px;
+                      background-color: #321bdd;
+                      border-radius: 20px;
+                      color: black;
+                      text-align: center;
+                      padding-top: 8px;
+                      font-size: 20px;
+                    "
+                  >
+                    12:00 a 22:00 hrs
+                  </p>
+                  
+                  <p
+                    style="
+                      font-family: 'Manuka-Bold';
+                      color: black;
+                      font-size: 20px;
+                      margin-top: 10px;
+                      margin-bottom: 10px;
+                    "
+                  >
+                    Lugar: Centro Cultural Estación Indianilla <br />
+                    Dirección: Claudio Bernard 111, Doctores, Cuauhtémoc,<br />
+                    06720 Ciudad de México, CDMX
+                  </p>
+                  <br />
+                  <img
+                    style="padding: 0px 0px 20px 0px"
+                    alt="Worlds 2022"
+                    src="http://worldscdmx2022.com/img-email//palabra.png"
+                  />
+                  <br /><br />
+                </center>
+                <div
+                  style="
+                    position: fixed;
+                    left: 0;
+                    bottom: 0;
+                    width: 100%;
+                    color: white;
+                    text-align: center;
+                  "
+                >
+                </div>
+              </div>
+            </div>
+          </body>
+        </html>        
+        `;
+        const browser = await puppeteer.launch();
+        const page = await browser.newPage();
+        await page.setContent(htmlContent);
 
-    sgMail.setApiKey(API_KEY)
-    const urlCv = 'L5R3P8';
-    const QR = await qrcode.toDataURL(urlCv)
-    const codigo = QR.replace('data:image/png;base64,' , ''); 
-    const message = {
-        to: 'erosalescoronel@gmail.com',
-        from: 'registro@worldscdmx2022.com',
-        subject: '¡Bienvenido a World CDMX 2022',
-        text: '¡Tus boletos estan listo!',
-        html: '<img src="' + QR +'"/>' +
-        '<img src="cid:myimagecid"/>' +
-        '<center> <p style="color: black; font-size: 20px;">Código de acceso</p> </center>' +
-        '<center> <p style="color: black; font-size: 20px;">TOKEM1029288</p> </center>' +
-        ' <center>  <p style="color: black; font-size: 20px;">Fecha</p> </center>' +
-        '<center> ' +
-        '<!-- eslint-disable-next-line max-len --> '+ 
-          '<p style="width: 540px; height: 40px; border-radius: 20px; color: #321BDD; text-align: center; padding-top: 8px; font-size: 20px;">29 DE SEPTIEMBRE DEL 2022</p> ' +
-          '<p style="color: black; font-size: 20px;">Hora</p> '+
-          '<!-- eslint-disable-next-line max-len --> ' + 
-          '<p style="width: 540px; height: 40px; border-radius: 20px; color: #321BDD; text-align: center; padding-top: 8px; font-size: 20px;">12:00 a 22:00 hrs</p> ' +
-          '<p style="color: black; font-size: 20px;"> ' +
-          'Lugar: Centro Cultural Estación Indianilla <br> ' +
-          '  Dirección: Claudio Bernard 111, Doctores, Cuauhtémoc,<br> 06720 Ciudad de México, CDMX '+
-          '</p> ' +
-        '<br> ' +
-        ' </center> '+
-        '<br>',
-        attachments: [
-            {
-              filename: "imageattachment.png",
-              content: codigo,
-              content_id: "myimagecid",
-            }
-        ]  
-    }
+        const buffer = await page.pdf({ format: "A4" });
+        const base64 = buffer.toString('base64');
+        console.log(`data:application/pdf;base64,${base64}`); // Test it in a browser.
 
-    sgMail.send(message)
-    .then(respose => console.log('Enviado' ))
-    .catch(error => console.log('Error' + error.message))
-    res.send({"mensaje": "Se genero correctamente el codigo QR"})
+        const message = {
+            to: 'erosalescoronel@gmail.com',
+            from: 'marketing@conexionfacil.com',
+            subject: '¡Bienvenido a World CDMX 2022',
+            text: '¡Tus boletos estan listo!',
+            html: '<html lang="en">' +
+            '<head>' +
+                '<meta charset="UTF-8">'+
+                '<meta http-equiv="X-UA-Compatible" content="IE=edge">'+
+                '<meta name="viewport" content="width=device-width, initial-scale=1.0">'+
+                '<title>Correo de confirmación Email</title>'+
+            '</head>'+
+            '<body style="margin:auto 0px;">'+
+                '<div >'+
+                    '<div style="position: relative; left: 0; top: 0; background-image: ' +
+                    "url('https://tes.opl.worldscdmx2022.com/fondo%2001.png'); width: 100%; height: 200px; display: flex;" +
+                    'justify-content: space-between;">' +
+                        '<div>'+
+                        '<img src="https://tes.opl.worldscdmx2022.com/2LOGO2.png"  aling="right" width="50%" style="padding-top: 60px; padding-left:20px; "/>'+
+                        '</div> '+
+                        '<div >'+
+                        '<img src="https://tes.opl.worldscdmx2022.com/worlDs_cdmx_2022.png" align="left" class="heaven" width="80%" style="float:right; padding-top: 70px; padding-right: 35px;"/>'+
+                        '</div>'+
+                    '</div>'+
+                    '<div >'+
+                        '<div  style=" text-align: center; font-family: '+
+                        "'Heebo', sans-serif; padding-top: 40px; padding-bottom: 60px; font-size: 20px; "+
+                        'font-weight:700;">'+
+                            '<img src="https://tes.opl.worldscdmx2022.com/Objeto%20inteligente%20vectorial%20copia.png" style="padding-bottom: 60px; width:150px; height: auto;">'+
+                            '<h1 class="azul" style="padding-bottom:20px; color: #321bdd;">WORLDS CDMX 2022</h1>'+
+                        '<p>Felicidades, estás a punto de obtener boletos para nuestro torneo </p>'+
+                        '<br />'+
+                        '<a href="www.google.com">Confirma tu e-mail haciendo clic aquí</a>'+                 
+                        '<p style="padding-top: 20px;">o escribe el siguiente código en la pantalla de confirmación:</p>'+
+                        '<p class="azul" style="padding-top: 40px;">45678</p>'            +
+                        '</div>'+
+                    '</div>'+
+                    '<div>'+
+                        '<img src="https://tes.opl.worldscdmx2022.com/Objeto%20inteligente%20vectorial_N.png" width="100%">'+
+                    '</div>'+
+                '</div>'+
+            '</body>'+
+            '</html>',
+            attachments: [
+                {
+                  filename: `Boleto`,
+                  content: base64,
+                  type: 'application/pdf',
+                  disposition: 'attachment'
+                }
+            ]
+        }
+        sgMail.send(message)
+        .then(respose => console.log('Enviado' ))
+        .catch(error => console.log('Error' + error.message))
+        console.log(base64)
+        res.send({"mensaje": "Se genero correctamente el codigo QR"})
+    });
 })
 
 
