@@ -218,7 +218,7 @@ app.post('/usuario', async function (req, res) {
 
                                 const message = {
                                     to: 'erosalescoronel@gmail.com',
-                                    from: 'marketing@conexionfacil.com',
+                                    from: 'boletos@worldscdmx2022.com',
                                     subject: '¡Bienvenido a World CDMX 2022',
                                     text: '¡Tus boletos estan listo!',
                                     html: '<html lang="en">' +
@@ -319,7 +319,7 @@ app.post('/confirmarCodigo', async function (req, res) {
 })
 
 app.post('/generateQR', async function (req, res) {
-    const urlCv = req.body.codigo_acceso;
+    const urlCv = 'https://www.google.com.mx/';
       const QR = await qrcode.toDataURL(urlCv)
       const htmlContent =  `
       <div style="display: flex; justify-content: center; align-items: center;">
@@ -330,25 +330,6 @@ app.post('/generateQR', async function (req, res) {
       fs.writeFileSync('./index.html', htmlContent)    
     res.send({"mensaje": "Se genero correctamente el codigo QR"})
 })
-
-
-app.get('/generatePDF', async function (req, res) {
-    var contenido = `
-        <h1>Esto es un test de html-pdf</h1>
-        <p>Estoy generando PDF a partir de este código HTML sencillo</p>
-        `;
-
-        pdf.create(contenido).toFile('./salida.pdf', function(err, res) {
-            if (err){
-                console.log(err);
-            } else {
-                console.log(res);
-            }
-    });
-    res.send({"mensaje": "Se genero correctamente el codigo QR"})
-})
-
-
 
 app.get('/generatePDF', async function (req, res) {
     var contenido = `
@@ -523,7 +504,7 @@ app.get('/enviarCorreo', async function (req, res) {
 
         const message = {
             to: 'erosalescoronel@gmail.com',
-            from: 'marketing@conexionfacil.com',
+            from: 'boletos@worldscdmx2022.com',
             subject: '¡Bienvenido a World CDMX 2022',
             text: '¡Tus boletos estan listo!',
             html: '<html lang="en">' +
