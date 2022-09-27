@@ -28,5 +28,6 @@
   "bugs": {
     "url": "https://github.com/arelihellomexico/backendLOL/issues"
   },
-  "homepage": "https://github.com/arelihellomexico/backendLOL#readme"
+  "homepage": "https://github.com/arelihellomexico/backendLOL#readme",
+  "devDependencies": {}
 }
