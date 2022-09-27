@@ -219,7 +219,7 @@ app.post('/usuario', async function (req, res) {
                                 const message = {
                                     to: 'erosalescoronel@gmail.com',
                                     from: 'boletos@worldscdmx2022.com',
-                                    subject: '¡Bienvenido a World CDMX 2022',
+                                    subject: '¡Bienvenidos a World CDMX 2022',
                                     text: '¡Tus boletos estan listo!',
                                     html: '<html lang="en">' +
                                     '<head>' +
@@ -505,7 +505,7 @@ app.get('/enviarCorreo', async function (req, res) {
         const message = {
             to: 'erosalescoronel@gmail.com',
             from: 'boletos@worldscdmx2022.com',
-            subject: '¡Bienvenido a World CDMX 2022',
+            subject: '¡Bienvenido a Worlds CDMX 2022',
             text: '¡Tus boletos estan listo!',
             html: '<html lang="en">' +
             '<head>' +
